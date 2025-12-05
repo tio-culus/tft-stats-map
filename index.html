@@ -313,6 +313,16 @@
             color: #ddd;
         }
 
+        .ability-values {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+
+        .ability-var-unknown {
+            color: #888;
+            font-style: italic;
+        }
+
         .tooltip-name-cell {
             cursor: help;
             text-decoration: underline dotted #888;
@@ -744,7 +754,7 @@
                 const nameCell = createCell(nameContainer);
 
                 if (champ.ability) {
-                    nameCell.addEventListener('mouseenter', (e) => showTooltip(e, champ.ability));
+                    nameCell.addEventListener('mouseenter', (e) => showTooltip(e, champ.ability, champ.stats));
                     nameCell.addEventListener('mousemove', moveTooltip);
                     nameCell.addEventListener('mouseleave', hideTooltip);
                 }
@@ -1064,11 +1074,158 @@
                 .on("mouseleave", hideTooltip);
         }
 
-        function showTooltip(e, ability) {
+        // Parse ability description: replace @Variable@ with values and style damage tags
+        // championStats is optional, used for PercentArmorDamage calculations
+        function parseAbilityDesc(ability, championStats = null) {
+            if (!ability || !ability.desc) return '';
+
+            let desc = ability.desc;
+            const variables = ability.variables || [];
+
+            // Create a map of variable names to values (index 1 = 1-star, 2 = 2-star, 3 = 3-star)
+            // Also store variables with null values as [0,0,0,0] for TotalDamage calculation
+            const varMap = {};
+            variables.forEach(v => {
+                if (v.name && Array.isArray(v.value)) {
+                    // If value array has nulls, replace with 0
+                    const safeValue = v.value.map(val => val != null ? val : 0);
+                    varMap[v.name] = safeValue;
+                    varMap[v.name.toLowerCase()] = safeValue;
+                }
+            });
+
+            // Calculate TotalDamage by summing all *Damage variables
+            // For PercentArmorDamage, apply armor calculation first
+            const calculateTotalDamage = () => {
+                const totals = [0, 0, 0, 0]; // index 0 is unused, 1-3 are star levels
+                variables.forEach(v => {
+                    if (v.name && v.name.toLowerCase().includes('damage') && Array.isArray(v.value)) {
+                        // If this is PercentArmorDamage, calculate armor-based damage first
+                        let damageValues = v.value;
+                        if (v.name === 'PercentArmorDamage' && championStats && championStats.armor) {
+                            const armor = championStats.armor;
+                            damageValues = v.value.map(val => val != null ? armor * val : 0);
+                        }
+                        for (let i = 1; i <= 3; i++) {
+                            totals[i] += (damageValues[i] != null ? damageValues[i] : 0);
+                        }
+                    }
+                });
+                return totals;
+            };
+
+            // Calculate PercentArmorDamage: stats.armor * variable value
+            const calculatePercentArmorDamage = (varValues) => {
+                if (!championStats || !championStats.armor) return varValues;
+                const armor = championStats.armor;
+                return varValues.map(val => val != null ? Math.round(armor * val * 100) / 100 : 0);
+            };
+
+            // Helper function to find variable values
+            const findVariable = (varName) => {
+                // Handle TotalDamage specially - sum all *Damage variables
+                if (varName === 'TotalDamage') {
+                    return calculateTotalDamage();
+                }
+
+                // Direct match
+                if (varMap[varName]) return varMap[varName];
+                if (varMap[varName.toLowerCase()]) return varMap[varName.toLowerCase()];
+
+                // Strip "Modified" prefix and try variations
+                if (varName.startsWith('Modified')) {
+                    const baseName = varName.replace('Modified', '');
+                    const prefixes = ['', 'AP', 'AD', 'Percent', 'Base', 'Bonus'];
+                    for (const prefix of prefixes) {
+                        const tryName = prefix + baseName;
+                        if (varMap[tryName]) return varMap[tryName];
+                        if (varMap[tryName.toLowerCase()]) return varMap[tryName.toLowerCase()];
+                    }
+                }
+
+                // Strip "Total" prefix and try variations (but not TotalDamage, handled above)
+                if (varName.startsWith('Total') && varName !== 'TotalDamage') {
+                    const baseName = varName.replace('Total', '');
+                    const prefixes = ['', 'AP', 'AD', 'Percent', 'PercentArmor', 'PercentHealth', 'Base', 'Bonus'];
+                    for (const prefix of prefixes) {
+                        const tryName = prefix + baseName;
+                        if (varMap[tryName]) return varMap[tryName];
+                        if (varMap[tryName.toLowerCase()]) return varMap[tryName.toLowerCase()];
+                    }
+                }
+
+                return null;
+            };
+
+            // Replace @VariableName@ or @VariableName*100@ with values (show star levels)
+            // Supports arithmetic operations: *, /, +, -
+            desc = desc.replace(/@(\w+)([\*\/\+\-][\d\.]+)?@/g, (match, varName, operation) => {
+                let values = findVariable(varName);
+
+                // Handle PercentArmorDamage - multiply by champion's armor stat
+                if (varName === 'PercentArmorDamage' && values) {
+                    values = calculatePercentArmorDamage(values);
+                }
+
+                if (values && Array.isArray(values)) {
+                    // Apply arithmetic operation if present (e.g., *100, /2, +10, -5)
+                    if (operation) {
+                        const operator = operation[0];
+                        const operand = parseFloat(operation.slice(1));
+                        values = values.map(val => {
+                            if (val == null) return null;
+                            switch (operator) {
+                                case '*': return val * operand;
+                                case '/': return val / operand;
+                                case '+': return val + operand;
+                                case '-': return val - operand;
+                                default: return val;
+                            }
+                        });
+                    }
+
+                    // Get values for 1/2/3 star (indices 1, 2, 3)
+                    const v1 = values[1] != null ? Math.round(values[1] * 100) / 100 : '?';
+                    const v2 = values[2] != null ? Math.round(values[2] * 100) / 100 : '?';
+                    const v3 = values[3] != null ? Math.round(values[3] * 100) / 100 : '?';
+                    return `<span class="ability-values">${v1}/${v2}/${v3}</span>`;
+                }
+
+                // Return without @ symbols if variable not found
+                return `<span class="ability-var-unknown">${varName}</span>`;
+            });
+
+            // Style damage type tags
+            const damageStyles = {
+                'magicDamage': 'color: #5cbcff;',
+                'physicalDamage': 'color: #ff8c00;',
+                'trueDamage': 'color: #fff;',
+                'TFTBonus': 'color: #00ff88;',
+                'spellPassive': 'color: #ffcc00; font-weight: bold;',
+                'spellActive': 'color: #ff66aa; font-weight: bold;',
+                'TFTShadowItemBonus': 'color: #9966ff; font-style: italic;'
+            };
+
+            // Replace styled tags with spans
+            Object.entries(damageStyles).forEach(([tag, style]) => {
+                const regex = new RegExp(`<${tag}>(.*?)</${tag}>`, 'gs');
+                desc = desc.replace(regex, `<span style="${style}">$1</span>`);
+            });
+
+            // Clean up remaining formatting
+            desc = desc.replace(/&nbsp;/g, ' ');
+            desc = desc.replace(/<br>/g, '<br/>');
+            desc = desc.replace(/%i:scale\w+%/g, ''); // Remove scale indicators
+
+            return desc;
+        }
+
+        function showTooltip(e, ability, championStats = null) {
             const escapedName = escapeHtml(ability.name);
-            const escapedDesc = escapeHtml(ability.desc);
+            const parsedDesc = parseAbilityDesc(ability, championStats);
             tooltip.innerHTML = `<h4>${escapedName}</h4>
-                            <p>${escapedDesc}</p>`;
+                            <p>${parsedDesc}</p>
+                            <p style="font-size:0.75em; color:#888; margin-top:8px; border-top:1px solid #444; padding-top:6px;">⚠ツールチップの値は間違っている可能性があります</p>`;
             tooltip.style.display = 'block';
             moveTooltip(e);
         }
