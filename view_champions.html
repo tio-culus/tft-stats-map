@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://d3js.org; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
     <title>TFT Set 16 Champions</title>
     <style>
         body {
@@ -495,6 +497,14 @@
             document.getElementById('btn-stat-mr').classList.toggle('active', stat === 'magicResist');
 
             renderMap();
+        }
+
+        // HTML escape function to prevent XSS
+        function escapeHtml(text) {
+            if (text == null) return '';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
         }
 
         // Create tooltip element
@@ -1035,10 +1045,13 @@
 
                 html += '<div style="max-height:350px; overflow-y:auto;">';
                 group.forEach(d => {
+                    const escapedName = escapeHtml(d.name);
+                    const escapedIcon = escapeHtml(d.icon);
+                    const escapedCost = escapeHtml(d.cost);
                     html += `<div style="display:flex; align-items:center; margin:4px 0; padding:4px; background:#333; border-radius:4px;">
-                        <img src="${d.icon}" style="width:24px; height:24px; border-radius:50%; margin-right:8px; border:2px solid ${costColors[d.cost]};">
-                        <span style="color:${costColors[d.cost]}; font-weight:bold;">${d.name}</span>
-                        <span style="color:#888; margin-left:4px;">($${d.cost})</span>
+                        <img src="${escapedIcon}" style="width:24px; height:24px; border-radius:50%; margin-right:8px; border:2px solid ${costColors[d.cost] || '#fff'};">
+                        <span style="color:${costColors[d.cost] || '#fff'}; font-weight:bold;">${escapedName}</span>
+                        <span style="color:#888; margin-left:4px;">($${escapedCost})</span>
                     </div>`;
                 });
                 html += '</div>';
@@ -1052,8 +1065,10 @@
         }
 
         function showTooltip(e, ability) {
-            tooltip.innerHTML = `<h4>${ability.name}</h4>
-                            <p>${ability.desc}</p>`;
+            const escapedName = escapeHtml(ability.name);
+            const escapedDesc = escapeHtml(ability.desc);
+            tooltip.innerHTML = `<h4>${escapedName}</h4>
+                            <p>${escapedDesc}</p>`;
             tooltip.style.display = 'block';
             moveTooltip(e);
         }
