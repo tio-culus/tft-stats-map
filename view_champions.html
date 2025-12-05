@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TFT Set 16 Champions</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #f0f0f0;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Prevent body scroll, handle in containers */
+        }
+
+        /* Dark scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        /* For Firefox */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #555 #2d2d2d;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 10px 0;
+            flex: 0 0 auto;
+            font-size: 1.5em;
+        }
+
+        #layout-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            border-top: 1px solid #333;
+        }
+
+        #sidebar {
+            width: 260px;
+            background-color: #252526;
+            border-right: 1px solid #333;
+            overflow-y: auto;
+            padding: 20px;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+
+        #main-content {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            background-color: #1e1e1e;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            /* Required for sticky headers to work well with borders sometimes, but collapse is usually fine. Let's stick to collapse but test sticky. */
+            border-collapse: collapse;
+            background-color: #2d2d2d;
+            font-size: 0.9em;
+        }
+
+        th,
+        td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+            vertical-align: middle;
+            /* Align content vertically */
+        }
+
+        th {
+            background-color: #333;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 1px 0 #444;
+            /* visual separator for sticky header */
+        }
+
+        th:hover {
+            background-color: #444;
+        }
+
+        th::after {
+            content: '';
+            margin-left: 5px;
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+        }
+
+        th.asc::after {
+            border-bottom: 5px solid #fff;
+        }
+
+        th.desc::after {
+            border-top: 5px solid #fff;
+        }
+
+        tr:hover {
+            background-color: #3a3a3a;
+        }
+
+        .cost-1 {
+            color: #9e9e9e;
+        }
+
+        .cost-2 {
+            color: #4caf50;
+        }
+
+        .cost-3 {
+            color: #2196f3;
+        }
+
+        .cost-4 {
+            color: #9c27b0;
+        }
+
+        .cost-5 {
+            color: #ffeb3b;
+        }
+
+        .icon-cost-1 {
+            border: 2px solid #9e9e9e;
+        }
+
+        .icon-cost-2 {
+            border: 2px solid #4caf50;
+        }
+
+        .icon-cost-3 {
+            border: 2px solid #2196f3;
+        }
+
+        .icon-cost-4 {
+            border: 2px solid #9c27b0;
+        }
+
+        .icon-cost-5 {
+            border: 2px solid #ffeb3b;
+        }
+
+        .stat-val {
+            color: #ccc;
+        }
+
+        /* Sidebar specific styles */
+        .filter-section {
+            margin-bottom: 25px;
+        }
+
+        .filter-section summary {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+            color: #ddd;
+            cursor: pointer;
+            user-select: none;
+            list-style: none;
+            outline: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .filter-section summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .filter-section summary::after {
+            content: '+';
+            /* Default closed indicator */
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .filter-section details[open] summary::after {
+            content: '-';
+            /* Open indicator */
+        }
+
+        /* Summary Tags */
+        .summary-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-left: auto;
+            margin-right: 10px;
+            justify-content: flex-end;
+            max-width: 60%;
+        }
+
+        .summary-tag {
+            background-color: #444;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 0.75em;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .summary-tag-remove {
+            cursor: pointer;
+            color: #aaa;
+            font-weight: bold;
+            line-height: 1;
+            display: inline-block;
+        }
+
+        .summary-tag-remove:hover {
+            color: #ff6b6b;
+        }
+
+        .cost-filter-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .cost-filter-item input {
+            margin-right: 10px;
+        }
+
+        .trait-filter-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .trait-filter-item {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.95em;
+            color: #ccc;
+        }
+
+        .trait-filter-item:hover {
+            color: #fff;
+        }
+
+        .trait-filter-item input {
+            margin-right: 10px;
+        }
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #555;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+            max-width: 320px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .tooltip h4 {
+            margin: 0 0 8px 0;
+            color: #ffd700;
+            font-size: 1.1em;
+            border-bottom: 1px solid #444;
+            padding-bottom: 4px;
+        }
+
+        .tooltip p {
+            margin: 0;
+            color: #ddd;
+        }
+
+        .tooltip-name-cell {
+            cursor: help;
+            text-decoration: underline dotted #888;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .champion-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-sizing: border-box;
+        }
+
+        /* View Switcher */
+        .view-btn {
+            background-color: #333;
+            color: #ccc;
+            border: 1px solid #555;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s;
+        }
+
+        .view-btn:first-child {
+            border-radius: 4px 0 0 4px;
+            border-right: none;
+        }
+
+        .view-btn:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+
+        .view-btn:hover {
+            background-color: #444;
+        }
+
+        .view-btn.active {
+            background-color: #0078d4;
+            color: #fff;
+            border-color: #0078d4;
+        }
+
+        /* Map Styles */
+        .axis path,
+        .axis line {
+            stroke: #555;
+        }
+
+        .axis text {
+            fill: #aaa;
+            font-size: 12px;
+        }
+
+        .grid line {
+            stroke: #333;
+            stroke-opacity: 0.7;
+            shape-rendering: crispEdges;
+        }
+
+        .grid path {
+            stroke-width: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>TFT Set 16 Champions</h1>
+
+    <div id="layout-container">
+        <div id="sidebar">
+            <div class="filter-section">
+                <details open>
+                    <summary>Cost <div id="cost-summary-tags" class="summary-tags-container"></div>
+                    </summary>
+                    <label class="cost-filter-item"><input type="checkbox" value="1" onchange="renderView()">
+                        <span class="cost-1" style="font-weight: bold;">1 Cost</span></label>
+                    <label class="cost-filter-item"><input type="checkbox" value="2" onchange="renderView()">
+                        <span class="cost-2" style="font-weight: bold;">2 Cost</span></label>
+                    <label class="cost-filter-item"><input type="checkbox" value="3" onchange="renderView()">
+                        <span class="cost-3" style="font-weight: bold;">3 Cost</span></label>
+                    <label class="cost-filter-item"><input type="checkbox" value="4" onchange="renderView()">
+                        <span class="cost-4" style="font-weight: bold;">4 Cost</span></label>
+                    <label class="cost-filter-item"><input type="checkbox" value="5" onchange="renderView()">
+                        <span class="cost-5" style="font-weight: bold;">5 Cost</span></label>
+                </details>
+            </div>
+
+            <div class="filter-section">
+                <details open>
+                    <summary>Traits <div id="trait-summary-tags" class="summary-tags-container"></div>
+                    </summary>
+                    <div id="trait-filters" class="trait-filter-container">
+                        <!-- Trait checkboxes will be generated here -->
+                    </div>
+                </details>
+            </div>
+
+            <div class="filter-section">
+                <details open>
+                    <summary>Role <div id="role-summary-tags" class="summary-tags-container"></div>
+                    </summary>
+                    <div id="role-filters" class="trait-filter-container">
+                        <!-- Role checkboxes will be generated here -->
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <div id="main-content">
+            <div style="margin-bottom: 20px; display: flex; justify-content: flex-end;">
+                <button id="btn-view-table" class="view-btn active" onclick="switchView('table')">Table</button>
+                <button id="btn-view-map" class="view-btn" onclick="switchView('map')">Durability Map</button>
+            </div>
+
+            <div id="loading">Loading data...</div>
+
+            <div id="view-table-container">
+                <table id="championTable" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0, 'numeric')" id="th-0">Cost</th>
+                            <th onclick="sortTable(1, 'string')" id="th-1">Name</th>
+                            <th onclick="sortTable(2, 'string')" id="th-2">Role</th>
+                            <th onclick="sortTable(3, 'string')" id="th-3">Traits</th>
+                            <th onclick="sortTable(4, 'numeric')" id="th-4">HP</th>
+                            <th onclick="sortTable(5, 'numeric')" id="th-5">Mana</th>
+                            <th onclick="sortTable(6, 'numeric')" id="th-6">AD</th>
+                            <th onclick="sortTable(7, 'numeric')" id="th-7">AR</th>
+                            <th onclick="sortTable(8, 'numeric')" id="th-8">MR</th>
+                            <th onclick="sortTable(9, 'numeric')" id="th-9">AS</th>
+                            <th onclick="sortTable(10, 'numeric')" id="th-10">Range</th>
+                        </tr>
+                    </thead>
+                    <tbody id="championBody"></tbody>
+                </table>
+            </div>
+
+            <div id="view-map-container" style="display:none; height: 100%; width: 100%;">
+                <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+                    <span style="color: #aaa; margin-right: 10px;">X-Axis:</span>
+                    <button id="btn-stat-ar" class="view-btn active" onclick="switchMapStat('armor')">Armor
+                        (AR)</button>
+                    <button id="btn-stat-mr" class="view-btn" onclick="switchMapStat('magicResist')">Magic Resist
+                        (MR)</button>
+                </div>
+                <div id="durability-map" style="width: 100%; height: 750px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        let championsData = [];
+        let allTraits = new Set();
+        let allRoles = new Set();
+        let currentSort = { column: 0, dir: 'asc' }; // Default sort by Cost (index 0), asc
+        let currentView = 'table'; // 'table' or 'map'
+        let currentMapStat = 'armor'; // 'armor' or 'magicResist'
+
+        function switchMapStat(stat) {
+            currentMapStat = stat;
+
+            // Update button states
+            document.getElementById('btn-stat-ar').classList.toggle('active', stat === 'armor');
+            document.getElementById('btn-stat-mr').classList.toggle('active', stat === 'magicResist');
+
+            renderMap();
+        }
+
+        // Create tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        document.body.appendChild(tooltip);
+
+        fetch('set16_champions.json')
+            .then(response => response.json())
+            .then(data => {
+                // Filter out champions with empty traits
+                championsData = data.champions.filter(c => c.traits && c.traits.length > 0);
+
+                // Extract unique traits and roles
+                championsData.forEach(c => {
+                    if (c.traits) {
+                        c.traits.forEach(t => allTraits.add(t));
+                    }
+                    if (c.role) {
+                        allRoles.add(c.role);
+                    }
+                });
+                generateTraitFilters();
+                generateRoleFilters();
+
+                // Initial sort by Cost
+                sortData(0, 'numeric', 'asc');
+                renderView();
+                updateHeaderStyles(0, 'asc');
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('championTable').style.display = 'table';
+            })
+            .catch(error => {
+                document.getElementById('loading').textContent = 'Error loading data: ' + error;
+                console.error('Error:', error);
+            });
+
+        function switchView(view) {
+            currentView = view;
+
+            // Update buttons
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-view-${view}`).classList.add('active');
+
+            // Toggle containers
+            document.getElementById('view-table-container').style.display = view === 'table' ? 'block' : 'none';
+            document.getElementById('view-map-container').style.display = view === 'map' ? 'block' : 'none';
+
+            renderView();
+        }
+
+        function renderView() {
+            if (currentView === 'table') {
+                renderTable();
+            } else {
+                renderMap();
+            }
+        }
+
+        function generateTraitFilters() {
+            const container = document.getElementById('trait-filters');
+            const sortedTraits = Array.from(allTraits).sort();
+
+            sortedTraits.forEach(trait => {
+                const label = document.createElement('label');
+                label.className = 'trait-filter-item';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = trait;
+                checkbox.onchange = renderView;
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(trait));
+                container.appendChild(label);
+            });
+        }
+
+        function generateRoleFilters() {
+            const container = document.getElementById('role-filters');
+            const sortedRoles = Array.from(allRoles).sort();
+
+            sortedRoles.forEach(role => {
+                const label = document.createElement('label');
+                label.className = 'trait-filter-item'; // Reuse same style
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = role;
+                checkbox.onchange = renderView;
+
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(role));
+                container.appendChild(label);
+            });
+        }
+
+        function getFilteredData() {
+            // Get selected costs
+            const costCheckboxes = document.querySelectorAll('.cost-filter-item input[type="checkbox"]');
+            const selectedCosts = Array.from(costCheckboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
+
+            // Get selected traits
+            const traitCheckboxes = document.querySelectorAll('#trait-filters input[type="checkbox"]');
+            const selectedTraits = Array.from(traitCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+            // Get selected roles
+            const roleCheckboxes = document.querySelectorAll('#role-filters input[type="checkbox"]');
+            const selectedRoles = Array.from(roleCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+            // Update summaries
+            updateSummaries(selectedCosts, selectedTraits, selectedRoles);
+
+            return championsData.filter(champ => {
+                // Filter by cost (if none selected, show all)
+                if (selectedCosts.length > 0 && !selectedCosts.includes(champ.cost)) return false;
+
+                // Filter by trait (if none selected, show all)
+                if (selectedTraits.length > 0) {
+                    const hasTrait = champ.traits && champ.traits.some(t => selectedTraits.includes(t));
+                    if (!hasTrait) return false;
+                }
+                // Filter by role
+                if (selectedRoles.length > 0) {
+                    if (!champ.role || !selectedRoles.includes(champ.role)) return false;
+                }
+
+                return true;
+            });
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('championBody');
+            tbody.innerHTML = '';
+
+            const filteredData = getFilteredData();
+
+            filteredData.forEach(champ => {
+                const tr = document.createElement('tr');
+                const stats = champ.stats || {};
+
+                // Helper to create cell
+                const createCell = (content, className) => {
+                    const td = document.createElement('td');
+                    if (typeof content === 'string' || typeof content === 'number') {
+                        td.textContent = content;
+                    } else {
+                        td.appendChild(content);
+                    }
+                    if (className) td.className = className;
+                    return td;
+                };
+
+                tr.appendChild(createCell(champ.cost, `cost-${champ.cost}`));
+
+                // Name cell with tooltip listeners and icon
+                const nameContainer = document.createElement('div');
+                nameContainer.className = 'tooltip-name-cell';
+
+                if (champ.icon) {
+                    const iconImg = document.createElement('img');
+                    iconImg.src = champ.icon;
+                    iconImg.alt = champ.name;
+                    iconImg.className = `champion-icon icon-cost-${champ.cost}`;
+                    nameContainer.appendChild(iconImg);
+                }
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = champ.name;
+                nameContainer.appendChild(nameSpan);
+
+                const nameCell = createCell(nameContainer);
+
+                if (champ.ability) {
+                    nameCell.addEventListener('mouseenter', (e) => showTooltip(e, champ.ability));
+                    nameCell.addEventListener('mousemove', moveTooltip);
+                    nameCell.addEventListener('mouseleave', hideTooltip);
+                }
+                tr.appendChild(nameCell);
+
+                tr.appendChild(createCell(champ.role || '-'));
+                tr.appendChild(createCell(champ.traits ? champ.traits.join(', ') : '-'));
+
+                // Stats
+                tr.appendChild(createCell(stats.hp || '-', 'stat-val'));
+                tr.appendChild(createCell(stats.mana ? `${stats.initialMana}/${stats.mana}` : '-', 'stat-val'));
+                tr.appendChild(createCell(stats.damage || '-', 'stat-val'));
+                tr.appendChild(createCell(stats.armor || '-', 'stat-val'));
+                tr.appendChild(createCell(stats.magicResist || '-', 'stat-val'));
+                tr.appendChild(createCell(stats.attackSpeed ? stats.attackSpeed.toFixed(2) : '-', 'stat-val'));
+                tr.appendChild(createCell(stats.range || '-', 'stat-val'));
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderMap() {
+            const container = document.getElementById('durability-map');
+            container.innerHTML = ''; // Clear previous map
+
+            const filteredData = getFilteredData();
+            if (filteredData.length === 0) return;
+
+            const margin = { top: 30, right: 80, bottom: 50, left: 60 };
+            const width = container.clientWidth - margin.left - margin.right;
+            const height = container.clientHeight - margin.top - margin.bottom;
+
+            const svg = d3.select("#durability-map")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Calculate max values for domains
+            // Use currentMapStat to determine which stat to use for X-axis
+            const statKey = currentMapStat; // 'armor' or 'magicResist'
+            const statLabel = currentMapStat === 'armor' ? 'Armor (AR)' : 'Magic Resist (MR)';
+            const statShort = currentMapStat === 'armor' ? 'AR' : 'MR';
+
+            const maxStat = d3.max(filteredData, d => (d.stats && d.stats[statKey]) ? d.stats[statKey] : 0) || 100;
+            const maxHP = d3.max(filteredData, d => (d.stats && d.stats.hp) ? d.stats.hp : 0) || 1000;
+
+            // X Axis: Stat (AR or MR) - Exponential scale based on EHP multiplier
+            // EHP multiplier = (1 + stat/100)
+            // Each grid unit = 1.8x EHP multiplier
+            // (1 + stat/100) = 1.8^n => stat = 100 * (1.8^n - 1)
+            const xScaleFactor = 1.8;
+
+            // Helper functions - defined first before use
+            const statToEhpMultiplier = val => 1 + val / 100;
+            const ehpMultiplierToStat = m => 100 * (m - 1);
+
+            // Generate tick values: stat = 100 * (1.8^n - 1)
+            const xTickValues = [0]; // Start with 0
+            const maxStatDomain = ehpMultiplierToStat((1 + maxStat / 100) * xScaleFactor);
+            const maxStatSteps = Math.ceil(Math.log((1 + maxStatDomain / 100)) / Math.log(xScaleFactor));
+            for (let n = 1; n <= maxStatSteps; n++) {
+                const val = Math.round(100 * (Math.pow(xScaleFactor, n) - 1));
+                if (val <= maxStatDomain) {
+                    xTickValues.push(val);
+                }
+            }
+
+            // Custom scale: maps stat to pixel position using log of EHP multiplier
+            // We transform stat to its EHP multiplier (1 + stat/100), then use log scale
+
+            const x = d3.scaleLog()
+                .base(xScaleFactor)
+                .domain([1, (1 + maxStat / 100) * xScaleFactor]) // EHP multiplier domain + 1 grid
+                .range([0, width]);
+
+            // Wrapper function to convert stat value to pixel position
+            const xStat = val => x(statToEhpMultiplier(val));
+
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .attr("class", "axis")
+                .call(d3.axisBottom(x)
+                    .tickValues(xTickValues.map(statToEhpMultiplier))
+                    .tickFormat(d => Math.round(ehpMultiplierToStat(d))));
+
+            svg.append("text")
+                .attr("text-anchor", "end")
+                .attr("x", width)
+                .attr("y", height + 35)
+                .style("fill", "#aaa")
+                .text(`${statLabel} - 1.8x EHP per grid`);
+
+            // Y Axis: HP (Exponential scale, base 1.8, reference 500HP)
+            // Each grid unit = 1.8x HP increase
+            // HP = 500 * 1.8^n where n is the grid position
+            const baseHP = 500;
+            const scaleFactor = 1.8;
+
+            // Find how many steps we need to cover maxHP
+            const maxSteps = Math.ceil(Math.log(maxHP / baseHP) / Math.log(scaleFactor)) + 2;
+            const minSteps = Math.floor(Math.log(baseHP / 2 / baseHP) / Math.log(scaleFactor)); // Start below 500
+
+            // Generate tick values: 500 * 1.8^n
+            const yTickValues = [];
+            for (let n = minSteps; n <= maxSteps; n++) {
+                const val = baseHP * Math.pow(scaleFactor, n);
+                if (val >= 200 && val <= maxHP * scaleFactor * 1.1) {
+                    yTickValues.push(Math.round(val));
+                }
+            }
+
+            // Custom scale: maps HP to pixel position using log
+            const y = d3.scaleLog()
+                .base(scaleFactor)
+                .domain([baseHP / scaleFactor, maxHP * scaleFactor])
+                .range([height, 0]);
+
+            svg.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(y)
+                    .tickValues(yTickValues)
+                    .tickFormat(d => Math.round(d)));
+
+            svg.append("text")
+                .attr("text-anchor", "end")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -40)
+                .attr("x", 0)
+                .style("fill", "#aaa")
+                .text("Health (HP) - 1.8x per grid");
+
+            // Grid lines
+            svg.append("g")
+                .attr("class", "grid")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickValues(xTickValues.map(statToEhpMultiplier)).tickSize(-height).tickFormat(""))
+
+            svg.append("g")
+                .attr("class", "grid")
+                .call(d3.axisLeft(y).tickValues(yTickValues).tickSize(-width).tickFormat(""))
+
+            // EHP Contour Lines (using selected stat for X-axis)
+            const maxEHP = maxHP * (1 + maxStat / 100);
+            const ehpInterval = 500;
+            const ehpLevels = [];
+            for (let e = ehpInterval; e <= maxEHP; e += ehpInterval) {
+                ehpLevels.push(e);
+            }
+
+            const lineGenerator = d3.line().x(d => xStat(d.stat))
+                .y(d => y(d.hp))
+                .curve(d3.curveMonotoneX);
+
+            ehpLevels.forEach(ehp => {
+                const points = [];
+                const step = 5;
+                // Iterate stat to generate curve points
+                const maxStatForContour = ehpMultiplierToStat((1 + maxStat / 100) * xScaleFactor);
+                for (let s = 0; s <= maxStatForContour; s += step) {
+                    const hp = ehp / (1 + s / 100); if (hp >= 0 && hp
+                        <= y.domain()[1]) { points.push({ stat: s, hp: hp }); }
+                } if (points.length > 1) {
+                    svg.append("path")
+                        .datum(points)
+                        .attr("fill", "none")
+                        .attr("stroke", "#444")
+                        .attr("stroke-width", 1)
+                        .attr("stroke-dasharray", "4 4")
+                        .attr("d", lineGenerator);
+
+                    const lastPoint = points[points.length - 1];
+                    if (lastPoint) {
+                        svg.append("text")
+                            .attr("x", xStat(lastPoint.stat))
+                            .attr("y", y(lastPoint.hp))
+                            .attr("dy", -5)
+                            .attr("text-anchor", "end")
+                            .style("fill", "#666")
+                            .style("font-size", "10px")
+                            .text(`EHP ${ehp}`);
+                    }
+                }
+            });
+
+            // Define border colors based on cost
+            const costColors = {
+                1: '#9e9e9e',
+                2: '#4caf50',
+                3: '#2196f3',
+                4: '#9c27b0',
+                5: '#ffeb3b'
+            };
+
+            // Group champions by coordinates (HP and AR)
+            const groupedData = {};
+            filteredData.forEach(d => {
+                const stats = d.stats || {};
+                const key = `${stats.hp || 0}_${stats[statKey] || 0}`;
+                if (!groupedData[key]) {
+                    groupedData[key] = [];
+                }
+                groupedData[key].push(d);
+            });
+
+            // Convert to array of groups
+            const groups = Object.values(groupedData);
+
+            // Add dots (images) for each group
+            const defs = svg.append("defs");
+
+            groups.forEach((group, groupIndex) => {
+                group.forEach((d, i) => {
+                    const patternId = `pattern-${d.name.replace(/\s+/g, '-')}-${groupIndex}-${i}`;
+                    if (d.icon) {
+                        defs.append("pattern")
+                            .attr("id", patternId)
+                            .attr("width", 1)
+                            .attr("height", 1)
+                            .append("image")
+                            .attr("xlink:href", d.icon)
+                            .attr("width", 32)
+                            .attr("height", 32)
+                            .attr("preserveAspectRatio", "xMidYMid slice");
+                    }
+                });
+            });
+
+            // Image clip
+            const clipDefs = svg.append("defs");
+            clipDefs.append("clipPath")
+                .attr("id", "icon-clip-main")
+                .append("circle")
+                .attr("r", 12);
+
+            // Create a node for each group (showing the first champion's icon)
+            const node = svg.append("g")
+                .selectAll("g")
+                .data(groups)
+                .enter()
+                .append("g")
+                .attr("transform", group => {
+                    const d = group[0];
+                    return `translate(${xStat((d.stats && d.stats[statKey]) ? d.stats[statKey] : 0)},${y((d.stats && d.stats.hp) ? d.stats.hp : 0)})`;;
+                });
+
+            // Circle background/border (use highest cost champion's color)
+            node.append("circle")
+                .attr("r", 12)
+                .style("fill", "#333")
+                .style("stroke", group => {
+                    const maxCost = Math.max(...group.map(d => d.cost || 1));
+                    return costColors[maxCost] || '#fff';
+                })
+                .style("stroke-width", 2);
+
+            // Show first champion's icon
+            node.append("image")
+                .attr("xlink:href", group => group[0].icon)
+                .attr("x", -12)
+                .attr("y", -12)
+                .attr("width", 24)
+                .attr("height", 24)
+                .attr("clip-path", "url(#icon-clip-main)");
+
+            // Add count badge for groups with multiple champions
+            node.filter(group => group.length > 1)
+                .append("circle")
+                .attr("cx", 8)
+                .attr("cy", -8)
+                .attr("r", 8)
+                .style("fill", "#e74c3c")
+                .style("stroke", "#fff")
+                .style("stroke-width", 1);
+
+            node.filter(group => group.length > 1)
+                .append("text")
+                .attr("x", 8)
+                .attr("y", -5)
+                .attr("text-anchor", "middle")
+                .style("fill", "#fff")
+                .style("font-size", "10px")
+                .style("font-weight", "bold")
+                .text(group => group.length);
+
+            // Tooltip interaction - show all champions in group
+            node.on("mouseenter", (event, group) => {
+                const firstStats = group[0].stats || {};
+                const statValue = firstStats[statKey] || 0;
+                const ehp = Math.round(firstStats.hp * (1 + statValue / 100));
+
+                let html = `<div style="margin-bottom:8px; font-size:0.85em; color:#ccc;">
+                    HP: <span style="color:#fff">${firstStats.hp}</span> | 
+                    ${statShort}: <span style="color:#fff">${statValue}</span> | 
+                    EHP: <span style="color:#00ff00">${ehp}</span>
+                </div>`;
+
+                html += '<div style="max-height:350px; overflow-y:auto;">';
+                group.forEach(d => {
+                    html += `<div style="display:flex; align-items:center; margin:4px 0; padding:4px; background:#333; border-radius:4px;">
+                        <img src="${d.icon}" style="width:24px; height:24px; border-radius:50%; margin-right:8px; border:2px solid ${costColors[d.cost]};">
+                        <span style="color:${costColors[d.cost]}; font-weight:bold;">${d.name}</span>
+                        <span style="color:#888; margin-left:4px;">($${d.cost})</span>
+                    </div>`;
+                });
+                html += '</div>';
+
+                tooltip.innerHTML = html;
+                tooltip.style.display = 'block';
+                moveTooltip(event);
+            })
+                .on("mousemove", moveTooltip)
+                .on("mouseleave", hideTooltip);
+        }
+
+        function showTooltip(e, ability) {
+            tooltip.innerHTML = `<h4>${ability.name}</h4>
+                            <p>${ability.desc}</p>`;
+            tooltip.style.display = 'block';
+            moveTooltip(e);
+        }
+
+        function moveTooltip(e) {
+            const xOffset = 15;
+            const yOffset = 15;
+
+            // Basic positioning
+            let left = e.pageX + xOffset;
+            let top = e.pageY + yOffset;
+
+            // Boundary checks (simple)
+            if (left + tooltip.offsetWidth > window.innerWidth) {
+                left = e.pageX - tooltip.offsetWidth - xOffset;
+            }
+            if (top + tooltip.offsetHeight > window.innerHeight + window.scrollY) {
+                top = e.pageY - tooltip.offsetHeight - yOffset;
+            }
+
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        }
+
+        function hideTooltip() {
+            tooltip.style.display = 'none';
+        }
+
+        function updateSummaries(selectedCosts, selectedTraits, selectedRoles) {
+            const createTag = (text, type, value) => {
+                const tag = document.createElement('span');
+                tag.className = 'summary-tag';
+                tag.textContent = text;
+
+                const removeBtn = document.createElement('span');
+                removeBtn.className = 'summary-tag-remove';
+                removeBtn.textContent = '×';
+                removeBtn.onclick = (e) => removeFilter(type, value, e);
+
+                tag.appendChild(removeBtn);
+                return tag;
+            };
+
+            // Update Cost Summary
+            const costContainer = document.getElementById('cost-summary-tags');
+            costContainer.innerHTML = '';
+            if (selectedCosts.length === 5) {
+                const span = document.createElement('span');
+                span.style.color = '#aaa';
+                span.style.fontSize = '0.8em';
+                span.textContent = '(All)';
+                costContainer.appendChild(span);
+            } else if (selectedCosts.length === 0) {
+                const span = document.createElement('span');
+                span.style.color = '#aaa';
+                span.style.fontSize = '0.8em';
+                span.textContent = '(None)';
+                costContainer.appendChild(span);
+            } else {
+                selectedCosts.forEach(cost => {
+                    costContainer.appendChild(createTag(cost, 'cost', cost));
+                });
+            }
+
+            // Update Traits Summary
+            const traitContainer = document.getElementById('trait-summary-tags');
+            traitContainer.innerHTML = '';
+            if (selectedTraits.length > 0) {
+                const displayCount = 3;
+                selectedTraits.slice(0, displayCount).forEach(trait => {
+                    traitContainer.appendChild(createTag(trait, 'trait', trait));
+                });
+                if (selectedTraits.length > displayCount) {
+                    const more = document.createElement('span');
+                    more.className = 'summary-tag';
+                    more.textContent = `+${selectedTraits.length - displayCount}`;
+                    traitContainer.appendChild(more);
+                }
+            }
+
+            // Update Role Summary
+            const roleContainer = document.getElementById('role-summary-tags');
+            roleContainer.innerHTML = '';
+            if (selectedRoles.length > 0) {
+                const displayCount = 3;
+                selectedRoles.slice(0, displayCount).forEach(role => {
+                    roleContainer.appendChild(createTag(role, 'role', role));
+                });
+                if (selectedRoles.length > displayCount) {
+                    const more = document.createElement('span');
+                    more.className = 'summary-tag';
+                    more.textContent = `+${selectedRoles.length - displayCount}`;
+                    roleContainer.appendChild(more);
+                }
+            }
+        }
+
+        function removeFilter(type, value, event) {
+            event.preventDefault();
+            event.stopPropagation(); // Prevent details from toggling
+
+            let selector = '';
+            if (type === 'cost') {
+                selector = `.cost-filter-item input[value="${value}"]`;
+            } else if (type === 'trait') {
+                selector = `#trait-filters input[value="${value}"]`;
+            } else if (type === 'role') {
+                selector = `#role-filters input[value="${value}"]`;
+            }
+
+            const checkbox = document.querySelector(selector);
+            if (checkbox) {
+                checkbox.checked = false;
+                renderView();
+            }
+        }
+
+        function sortTable(n, type) {
+            let dir = 'asc';
+            if (currentSort.column === n && currentSort.dir === 'asc') {
+                dir = 'desc';
+            }
+            currentSort = { column: n, dir: dir };
+
+            sortData(n, type, dir);
+            renderTable();
+            updateHeaderStyles(n, dir);
+        }
+
+        function sortData(n, type, dir) {
+            championsData.sort((a, b) => {
+                let x, y;
+                const sA = a.stats || {};
+                const sB = b.stats || {};
+
+                // Map column index to data property
+                switch (n) {
+                    case 0: x = a.cost; y = b.cost; break;
+                    case 1: x = a.name; y = b.name; break;
+                    case 2: x = a.role || ''; y = b.role || ''; break;
+                    case 3: x = (a.traits ? a.traits.join(', ') : ''); y = (b.traits ? b.traits.join(', ') :
+                        ''); break;
+                    case 4: x = sA.hp; y = sB.hp; break;
+                    case 5: x = sA.mana; y = sB.mana; break; // Sort by Max Mana
+                    case 6: x = sA.damage; y = sB.damage; break;
+                    case 7: x = sA.armor; y = sB.armor; break;
+                    case 8: x = sA.magicResist; y = sB.magicResist; break;
+                    case 9: x = sA.attackSpeed; y = sB.attackSpeed; break;
+                    case 10: x = sA.range; y = sB.range; break;
+                    default: x = ''; y = '';
+                }
+
+                if (type === 'numeric') {
+                    const valX = (x === null || x === undefined) ? -999 : parseFloat(x);
+                    const valY = (y === null || y === undefined) ? -999 : parseFloat(y);
+
+                    return dir === 'asc' ? valX - valY : valY - valX;
+                } else {
+                    x = x.toString().toLowerCase();
+                    y = y.toString().toLowerCase();
+                    if (dir === 'asc') {
+                        return x < y ? -1 : (x > y ? 1 : 0);
+                    } else {
+                        return x > y ? -1 : (x < y ? 1 : 0);
+                    }
+                }
+            });
+        }
+
+        function updateHeaderStyles(n, dir) {
+            // Remove classes from all headers
+            for (let i = 0; i <= 10; i++) {
+                const th = document.getElementById(`th-${i}`);
+                if (th) th.className = '';
+            }
+            // Add class to current header
+            const currentTh = document.getElementById(`th-${n}`);
+            if (currentTh) currentTh.className = dir;
+        }
+    </script>
+</body>
+
+</html>
