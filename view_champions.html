@@ -385,6 +385,19 @@
 
     <div id="layout-container">
         <div id="sidebar">
+            <!-- Version Selector -->
+            <div class="filter-section"
+                style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #444;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <label style="color: #aaa; font-size: 0.9em;">Version:</label>
+                    <select id="version-selector" onchange="loadVersion(this.value)"
+                        style="flex: 1; padding: 6px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px;">
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+                <div id="version-info" style="font-size: 0.8em; color: #666;"></div>
+            </div>
+
             <div class="filter-section">
                 <details open>
                     <summary>Cost <div id="cost-summary-tags" class="summary-tags-container"></div>
@@ -489,11 +502,72 @@
         tooltip.className = 'tooltip';
         document.body.appendChild(tooltip);
 
-        fetch('set16_champions.json')
-            .then(response => response.json())
-            .then(data => {
+        let versionsData = null;
+        let currentVersion = null;
+
+        // Load versions registry and initialize
+        async function initializeApp() {
+            try {
+                // Try to load versions.json
+                const versionsResponse = await fetch('versions.json');
+                if (versionsResponse.ok) {
+                    versionsData = await versionsResponse.json();
+                    populateVersionSelector();
+                    await loadVersion(versionsData.latest);
+                } else {
+                    // Fallback to set16_champions.json if versions.json doesn't exist
+                    console.log('versions.json not found, using set16_champions.json');
+                    await loadDataFile('set16_champions.json');
+                }
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                // Fallback
+                await loadDataFile('set16_champions.json');
+            }
+        }
+
+        function populateVersionSelector() {
+            const selector = document.getElementById('version-selector');
+            selector.innerHTML = '';
+
+            versionsData.versions.forEach(v => {
+                const option = document.createElement('option');
+                option.value = v.version;
+                option.textContent = `v${v.version} (${v.date})`;
+                selector.appendChild(option);
+            });
+        }
+
+        async function loadVersion(version) {
+            currentVersion = version;
+            document.getElementById('version-selector').value = version;
+
+            const versionEntry = versionsData?.versions.find(v => v.version === version);
+            const file = versionEntry?.file || 'set16_champions.json';
+
+            // Update version info display
+            const versionInfo = document.getElementById('version-info');
+            if (versionEntry) {
+                versionInfo.textContent = `Extracted: ${versionEntry.date}`;
+            }
+
+            await loadDataFile(file);
+        }
+
+        async function loadDataFile(file) {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('championTable').style.display = 'none';
+
+                const response = await fetch(file);
+                const data = await response.json();
+
                 // Filter out champions with empty traits
                 championsData = data.champions.filter(c => c.traits && c.traits.length > 0);
+
+                // Reset and rebuild trait/role filters
+                allTraits = new Set();
+                allRoles = new Set();
 
                 // Extract unique traits and roles
                 championsData.forEach(c => {
@@ -514,11 +588,14 @@
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('championTable').style.display = 'table';
-            })
-            .catch(error => {
+            } catch (error) {
                 document.getElementById('loading').textContent = 'Error loading data: ' + error;
                 console.error('Error:', error);
-            });
+            }
+        }
+
+        // Initialize the app
+        initializeApp();
 
         function switchView(view) {
             currentView = view;

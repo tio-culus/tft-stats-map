@@ -1,0 +1,10 @@
+{
+    "versions": [
+        {
+            "version": "15.24.1",
+            "date": "2025-12-05",
+            "file": "data/set16_v15.24.1.json"
+        }
+    ],
+    "latest": "15.24.1"
+}
